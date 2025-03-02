@@ -1,0 +1,36 @@
+[package]
+name = "realworld"
+version = "0.1.0"
+edition = "2024"
+
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+path = "src/main.rs"
+name = "realworld"
+
+
+[dependencies]
+actix-web = "4"
+tokio = { version = "1", features = ["full"] }
+serde = "1.0.115"
+config = { version = "0.14.0", default-features = false, features = ["yaml"] }
+sqlx = { version = "0.8", default-features = false, features = [
+    "runtime-tokio-rustls",
+    "macros",
+    "postgres",
+    "uuid",
+    "chrono",
+    "migrate"
+] }
+uuid = { version = "1.12.1", features = ["v4"] }
+chrono = { version = "0.4.22", default-features = false, features = ["clock"] }
+actix-cors = "0.7.0"
+log = "0.4.25"
+tracing = "0.1.41"
+env_logger = "0.11.6"
+jsonwebtoken = "8"
+bcrypt = "0.16.0"
+dotenv = "0.15.0"
