@@ -1,5 +1,5 @@
 pub mod token;
-mod registration;
+pub mod registration;
 
 
 #[derive(serde::Serialize)]

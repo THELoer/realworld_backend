@@ -1,8 +1,9 @@
 use std::io;
+use std::net::TcpListener;
 use dotenv::dotenv;
 use env_logger::Env;
 use sqlx::PgPool;
-use tokio::net::TcpListener;
+
 use realworld::configuration::get_config;
 use realworld::startup::run;
 

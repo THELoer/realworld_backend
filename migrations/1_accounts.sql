@@ -3,5 +3,5 @@ CREATE TABLE accounts(
     PRIMARY KEY (id),
     email TEXT NOT NULL UNIQUE,
     username TEXT NOT NULL,
-    password TEXT NOT NULL,
+    password TEXT NOT NULL
 );

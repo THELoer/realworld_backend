@@ -1,28 +1,45 @@
 use actix_web::{web, HttpResponse};
 use bcrypt::{hash, DEFAULT_COST};
 use chrono::Utc;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct User {
     username: String,
     email: String,
     password: String,
 }
 
-pub async fn register(form: web::Json<User>, pool: web::Data<PgPool>) -> HttpResponse {
-    match reg_acc(&pool, &form).await {
-        Ok(_) => {
-            
-        }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RegisterRequest {
+    pub email: String,
+    pub password: String,
+    pub username: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RegisterResponse {
+    pub token: String,
+    pub user: User,
+}
+
+
+pub async fn register(user: web::Json<RegisterRequest>, pool: web::Data<PgPool>) -> HttpResponse {
+    println!("started");
+    match reg_acc(&pool, &user).await {
+        Ok(_) => return HttpResponse::Created().json(user),
+        Err(_) => return HttpResponse::InternalServerError().finish()
     }
 }
 
 
-pub async fn reg_acc(pool: &PgPool, form: &User) -> Result<(), sqlx::Error> {
+pub async fn reg_acc(pool: &PgPool, form: &RegisterRequest) -> Result<(), sqlx::Error> {
     let uuid = Uuid::new_v4();
+
+    println!("registerrrr");
 
     let password_hash = hash(&form.password, DEFAULT_COST).unwrap();
 
@@ -35,7 +52,7 @@ pub async fn reg_acc(pool: &PgPool, form: &User) -> Result<(), sqlx::Error> {
 
     sqlx::query!(
         r#"
-        INSERT INTO accounts (id, email, username, password
+        INSERT INTO accounts (id, email, username, password)
         VALUES ($1, $2, $3, $4)
         "#,
         uuid.to_string(),

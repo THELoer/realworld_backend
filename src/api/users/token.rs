@@ -1,6 +1,7 @@
 use std::env;
 use actix_web::{HttpRequest, HttpServer};
-use jsonwebtoken::{decode, DecodingKey, Validation};
+use chrono::Utc;
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, TokenData, Validation};
 use sqlx::PgPool;
 
 
@@ -11,37 +12,27 @@ pub struct Claims {
 }
 
 
-// FIXME: возможно не будет работать!!!!
-pub async fn get_token(pool: &PgPool, req: HttpRequest) -> Result<String, std::io::Error> {
-    let auth_header = req.headers().get("Authorization");
-
-    if let Some(header) = auth_header {
-        if let Ok(auth_str) = header.to_str() {
-            if auth_str.starts_with("Token ") {
-                let token = &auth_str[6..];
-                let decoding_key = DecodingKey::from_secret(env::var("JWT_SECRET").unwrap().as_ref());
-
-                match decode::<Claims>(token, &decoding_key, &Validation::default()) {
-                    Ok(token_data) => {
-                        let user_id = token_data.claims.sub;
-                        let user_r = sqlx::query!("SELECT * FROM accounts WHERE id = $1", user_id)
-                            .fetch_one(pool)
-                            .await;
-                        if user_r.is_err() {
-                            return Err("Нет токена");
-                        }
-
-                        return Ok(token.to_string());
-
-                    }
-                    Err(e) => return Err("Недействительный токен")
-                }
-            }
-        }
-    }
-    return Err("Недействительный токен");
+pub enum Error {
+    TokenIsExpired(String),
+    AccountDoesNotExist(String),
 }
 
 
-pub async fn make_token()
+pub fn create_token(id: String) -> Result<String, jsonwebtoken::errors::Error> {
+    let expiration = Utc::now().timestamp() + 86400;
+    let claims = Claims {
+        sub: id,
+        exp: expiration,
+    };
+    encode(&Header::default(), &claims, &EncodingKey::from_secret(env::var("JWT_SECRET").expect("JWT_SECRET not found").as_ref()))
+}
+
+fn verify_token(token: &str) -> Result<TokenData<Claims>, jsonwebtoken::errors::Error> {
+    decode::<Claims>(
+        token,
+        &DecodingKey::from_secret(env::var("JWT_SECRET").expect("JWT_SECRET not found").as_ref()),
+        &Validation::default()
+    )
+}
+
 
