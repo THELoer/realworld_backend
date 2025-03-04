@@ -1,53 +1,60 @@
 use actix_web::{web, HttpResponse};
+use actix_web::web::Json;
 use bcrypt::{hash, DEFAULT_COST};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
+use crate::api::users::token::create_token;
+use crate::api::users::User;
 
-#[derive(Deserialize, Serialize, Debug)]
-pub struct User {
-    username: String,
-    email: String,
-    password: String,
-}
-
-
+// #[derive(Deserialize, Serialize, Debug)]
+// pub struct User {
+//     username: String,
+//     email: String,
+//     password: String,
+// }
+//
+//
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RegisterRequest {
-    pub email: String,
-    pub password: String,
-    pub username: String,
-}
-
-#[derive(Debug, Serialize)]
-pub struct RegisterResponse {
-    pub token: String,
-    pub user: User,
+    user: User,
 }
 
 
-pub async fn register(user: web::Json<RegisterRequest>, pool: web::Data<PgPool>) -> HttpResponse {
+
+
+pub async fn register(user: Json<RegisterRequest>, pool: web::Data<PgPool>) -> HttpResponse {
     println!("started");
     match reg_acc(&pool, &user).await {
-        Ok(_) => return HttpResponse::Created().json(user),
+        Ok(token) => {
+            let json = serde_json::json!({"user": {
+                "email": user.user.email,
+                "username": user.user.username,
+                "bio": "",
+                "image": "",
+                "token": create_token(token).unwrap_or("".to_string()),
+            }});
+
+            return HttpResponse::Created().json(json)
+        },
         Err(_) => return HttpResponse::InternalServerError().finish()
     }
 }
 
 
-pub async fn reg_acc(pool: &PgPool, form: &RegisterRequest) -> Result<(), sqlx::Error> {
+pub async fn reg_acc(pool: &PgPool, form: &RegisterRequest) -> Result<String, sqlx::Error> {
     let uuid = Uuid::new_v4();
 
     println!("registerrrr");
 
-    let password_hash = hash(&form.password, DEFAULT_COST).unwrap();
+    let password_hash = hash(&form.user.password, DEFAULT_COST).unwrap();
 
     tracing::info!(
         "New account: {}, time: {}, email: {}",
         uuid,
         Utc::now(),
-        form.email,
+        form.user.email,
     );
 
     sqlx::query!(
@@ -56,8 +63,8 @@ pub async fn reg_acc(pool: &PgPool, form: &RegisterRequest) -> Result<(), sqlx::
         VALUES ($1, $2, $3, $4)
         "#,
         uuid.to_string(),
-        form.email,
-        form.username,
+        form.user.email,
+        form.user.username,
         password_hash
     )
         .execute(pool)
@@ -66,5 +73,5 @@ pub async fn reg_acc(pool: &PgPool, form: &RegisterRequest) -> Result<(), sqlx::
             tracing::error!("Failed to execute query: {:?}", e);
             e
         })?;
-    Ok(())
+    Ok(uuid.to_string())
 }

@@ -1,7 +1,8 @@
 use std::env;
-use actix_web::{HttpRequest, HttpServer};
+use actix_web::{web, HttpRequest, HttpResponse, HttpServer, Responder};
 use chrono::Utc;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, TokenData, Validation};
+use serde_json::json;
 use sqlx::PgPool;
 
 
@@ -15,6 +16,14 @@ pub struct Claims {
 pub enum Error {
     TokenIsExpired(String),
     AccountDoesNotExist(String),
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct User {
+    username: String,
+    id: String,
+    email: String,
+    password: String,
 }
 
 
@@ -36,3 +45,52 @@ fn verify_token(token: &str) -> Result<TokenData<Claims>, jsonwebtoken::errors::
 }
 
 
+pub async fn verify_token_handler(req: HttpRequest, pool: web::Data<PgPool>) -> impl Responder {
+    let auth_header = req.headers().get("Authorization");
+    let token = match auth_header {
+        Some(header) => {
+            let header_str = header.to_str().map_err(|e| {
+                eprintln!("Invalid header: {}", e);
+                HttpResponse::BadRequest().finish()
+            });
+            let header_str = header_str.unwrap();
+            if header_str.starts_with("Token ") {
+                header_str[7..].to_string()
+            } else {
+                return HttpResponse::BadRequest().json(json!({
+                    "error": "Invalid Authorization header format. User 'Token <token>'"
+                }));
+            }
+        }
+        None => {
+            return  HttpResponse::Unauthorized().json(json!({
+                "error": "No Auth header provided"
+            }));
+        }
+    };
+
+    match verify_token(&token) {
+        Ok(token_data) => {
+            let user_id = token_data.claims.sub;
+
+
+            let user = sqlx::query_as!(User, "SELECT * FROM accounts WHERE id = $1", user_id)
+                .fetch_one(pool.get_ref())
+                .await
+                .map_err(|e| {
+                    eprintln!("Database errror: {}", e);
+                    HttpResponse::InternalServerError().finish()
+                });
+
+            HttpResponse::Ok().json(json!({
+                "token": token
+            }))
+        }
+        Err(e) => {
+            eprintln!("Token verification error: {}", e);
+            HttpResponse::Unauthorized().json(json!({
+                "error": "Invalid or expired token"
+            }))
+        }
+    }
+}

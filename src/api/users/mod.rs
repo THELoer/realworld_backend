@@ -1,10 +1,14 @@
+use serde::{Deserialize, Serialize};
+
 pub mod token;
 pub mod registration;
+pub mod login;
+mod error;
 
-
-#[derive(serde::Serialize)]
-pub struct user {
-    email: String,
-    token: String,
+#[derive(Deserialize, Serialize, Debug)]
+pub struct User {
     username: String,
+    email: String,
+    password: String,
 }
+
