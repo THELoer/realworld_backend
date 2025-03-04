@@ -1,11 +1,11 @@
-use std::net::TcpListener;
-use actix_cors::Cors;
-use actix_web::dev::Server;
-use actix_web::{web, App, HttpServer};
-use sqlx::PgPool;
 use crate::api::users::login::login;
 use crate::api::users::registration::register;
 use crate::api::users::user::current_user;
+use actix_cors::Cors;
+use actix_web::dev::Server;
+use actix_web::{App, HttpServer, web};
+use sqlx::PgPool;
+use std::net::TcpListener;
 
 pub fn run(listener: TcpListener, db_pool: PgPool) -> Result<Server, std::io::Error> {
     let db_pool = web::Data::new(db_pool);
@@ -23,7 +23,7 @@ pub fn run(listener: TcpListener, db_pool: PgPool) -> Result<Server, std::io::Er
             .route("/api/user", web::get().to(current_user))
             .app_data(db_pool.clone())
     })
-        .listen(listener)?
-        .run();
+    .listen(listener)?
+    .run();
     Ok(server)
 }

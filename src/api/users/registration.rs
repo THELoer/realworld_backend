@@ -1,12 +1,12 @@
-use actix_web::{web, HttpResponse};
+use crate::api::users::User;
+use crate::api::users::token::create_token;
 use actix_web::web::Json;
-use bcrypt::{hash, DEFAULT_COST};
+use actix_web::{HttpResponse, web};
+use bcrypt::{DEFAULT_COST, hash};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
-use crate::api::users::token::create_token;
-use crate::api::users::User;
 
 // #[derive(Deserialize, Serialize, Debug)]
 // pub struct User {
@@ -21,9 +21,6 @@ pub struct RegisterRequest {
     user: User,
 }
 
-
-
-
 pub async fn register(user: Json<RegisterRequest>, pool: web::Data<PgPool>) -> HttpResponse {
     println!("started");
     match reg_acc(&pool, &user).await {
@@ -36,12 +33,11 @@ pub async fn register(user: Json<RegisterRequest>, pool: web::Data<PgPool>) -> H
                 "token": create_token(token).unwrap_or("".to_string()),
             }});
 
-            return HttpResponse::Created().json(json)
-        },
-        Err(_) => return HttpResponse::InternalServerError().finish()
+            return HttpResponse::Created().json(json);
+        }
+        Err(_) => return HttpResponse::InternalServerError().finish(),
     }
 }
-
 
 pub async fn reg_acc(pool: &PgPool, form: &RegisterRequest) -> Result<String, sqlx::Error> {
     let uuid = Uuid::new_v4();
@@ -67,11 +63,11 @@ pub async fn reg_acc(pool: &PgPool, form: &RegisterRequest) -> Result<String, sq
         form.user.username,
         password_hash
     )
-        .execute(pool)
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to execute query: {:?}", e);
-            e
-        })?;
+    .execute(pool)
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to execute query: {:?}", e);
+        e
+    })?;
     Ok(uuid.to_string())
 }

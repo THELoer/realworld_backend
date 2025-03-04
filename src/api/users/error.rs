@@ -7,7 +7,7 @@ pub enum Error {
     PasswordOrLoginIsIncorrect(String),
     ServerError(String),
     DatabaseError(String),
-    DOESNOTIMPLEDERROR(String)
+    DOESNOTIMPLEDERROR(String),
 }
 
 impl fmt::Display for Error {
@@ -21,9 +21,5 @@ impl fmt::Display for Error {
         }
     }
 }
-
-
-
-
 
 impl std::error::Error for Error {}
