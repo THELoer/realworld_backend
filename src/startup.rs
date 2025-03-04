@@ -5,6 +5,7 @@ use actix_web::{web, App, HttpServer};
 use sqlx::PgPool;
 use crate::api::users::login::login;
 use crate::api::users::registration::register;
+use crate::api::users::user::current_user;
 
 pub fn run(listener: TcpListener, db_pool: PgPool) -> Result<Server, std::io::Error> {
     let db_pool = web::Data::new(db_pool);
@@ -19,6 +20,7 @@ pub fn run(listener: TcpListener, db_pool: PgPool) -> Result<Server, std::io::Er
             .wrap(cors)
             .route("/api/users", web::post().to(register))
             .route("/api/users/login", web::post().to(login))
+            .route("/api/user", web::get().to(current_user))
             .app_data(db_pool.clone())
     })
         .listen(listener)?
