@@ -55,13 +55,15 @@ pub async fn reg_acc(pool: &PgPool, form: &RegisterRequest) -> Result<String, sq
 
     sqlx::query!(
         r#"
-        INSERT INTO accounts (id, email, username, password)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO accounts (id, email, username, password, bio, image)
+        VALUES ($1, $2, $3, $4, $5, $6)
         "#,
         uuid.to_string(),
         form.user.email,
         form.user.username,
-        password_hash
+        password_hash,
+        String::from(""),
+        String::from(""),
     )
     .execute(pool)
     .await

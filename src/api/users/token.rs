@@ -32,6 +32,8 @@ pub struct User {
     id: String,
     email: String,
     password: String,
+    bio: String,
+    image: String,
 }
 
 pub fn create_token(id: String) -> Result<String, jsonwebtoken::errors::Error> {

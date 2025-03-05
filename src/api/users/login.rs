@@ -18,16 +18,25 @@ pub struct User {
     password: String,
 }
 
-//TODO: return user{email, username, bio, image, token)
+#[derive(Deserialize)]
+pub struct FromDb {
+    email: String,
+    username: String,
+    bio: String,
+    image: String,
+    id: String
+}
+
+
 pub async fn login(form: Json<Login>, pool: Data<PgPool>) -> HttpResponse {
     match loginn(&form, &pool).await {
-        Ok((id, username)) => {
+        Ok(user) => {
             let json = json!({ "user": {
-                "email": form.user.email,
-                "username": username,
-                "bio": "",
-                "image": "",
-                "token": create_token(id).unwrap_or("".to_string()),
+                "email": user.email,
+                "username": user.username,
+                "bio": user.bio,
+                "image": user.image,
+                "token": create_token(user.id).unwrap_or("".to_string()),
             }});
 
             return HttpResponse::Ok().json(json);
@@ -44,9 +53,9 @@ pub async fn login(form: Json<Login>, pool: Data<PgPool>) -> HttpResponse {
     }
 }
 
-pub async fn loginn(form: &Login, pool: &PgPool) -> Result<(String, String), Error> {
+pub async fn loginn(form: &Login, pool: &PgPool) -> Result<FromDb, Error> {
     let query = sqlx::query!(
-        "SELECT email, password, username, id FROM accounts WHERE email = $1",
+        "SELECT email, password, username, id, bio, image FROM accounts WHERE email = $1",
         &form.user.email
     )
     .fetch_one(pool)
@@ -66,5 +75,13 @@ pub async fn loginn(form: &Login, pool: &PgPool) -> Result<(String, String), Err
         ));
     }
 
-    return Ok((query.id, query.username));
+    let info = FromDb {
+        username: query.username,
+        email: query.email,
+        id: query.id,
+        bio: query.bio,
+        image: query.image,
+    };
+
+    return Ok(info);
 }
