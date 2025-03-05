@@ -4,6 +4,6 @@ CREATE TABLE accounts(
     email TEXT NOT NULL UNIQUE,
     username TEXT NOT NULL,
     password TEXT NOT NULL,
-    bio TEXT UNIQUE NOT NULL,
-    image TEXT UNIQUE NOT NULL
+    bio TEXT NOT NULL,
+    image TEXT NOT NULL
 );

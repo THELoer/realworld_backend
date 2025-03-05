@@ -1,6 +1,6 @@
 use crate::api::users::login::login;
 use crate::api::users::registration::register;
-use crate::api::users::user::current_user;
+use crate::api::users::user::{current_user, update_user};
 use actix_cors::Cors;
 use actix_web::dev::Server;
 use actix_web::{App, HttpServer, web};
@@ -21,6 +21,7 @@ pub fn run(listener: TcpListener, db_pool: PgPool) -> Result<Server, std::io::Er
             .route("/api/users", web::post().to(register))
             .route("/api/users/login", web::post().to(login))
             .route("/api/user", web::get().to(current_user))
+            .route("/api/user", web::put().to(update_user))
             .app_data(db_pool.clone())
     })
     .listen(listener)?
